@@ -91,6 +91,9 @@ h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute
 .dot{width:11px;height:11px;border-radius:50%;display:inline-block;flex:none}
 .dayrow{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;gap:8px;margin-top:10px}
 .dayrow button{padding:0;font-size:22px}
+.rangerow{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center;margin-top:10px}
+.rangerow span{color:var(--muted);font-size:15px}
+.rangerow input{min-width:0;width:100%}
 
 /* maps */
 .mapscroll{overflow:auto;border-radius:10px;border:1px solid var(--line);background:#fff;max-height:70dvh;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
@@ -258,6 +261,7 @@ h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute
       <div class="card">
         <div class="seg perseg"></div>
         <div class="dayrow"><button type="button" data-dshift="-1" aria-label="-1">‹</button><input type="date" class="dayin" aria-label="Día"><button type="button" data-dshift="1" aria-label="+1">›</button></div>
+        <div class="rangerow"><input type="date" class="rfrom" aria-label="Desde"><span>~</span><input type="date" class="rto" aria-label="Hasta"></div>
       </div>
       <div class="mapgrid">
         <div class="card" style="display:flex;flex-direction:column;gap:10px;min-width:0">
@@ -284,6 +288,7 @@ h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute
       <div class="card">
         <div class="seg perseg"></div>
         <div class="dayrow"><button type="button" data-dshift="-1" aria-label="-1">‹</button><input type="date" class="dayin" aria-label="Día"><button type="button" data-dshift="1" aria-label="+1">›</button></div>
+        <div class="rangerow"><input type="date" class="rfrom" aria-label="Desde"><span>~</span><input type="date" class="rto" aria-label="Hasta"></div>
       </div>
       <div class="card"><h2 id="t_byday"></h2><div class="days" id="days"></div></div>
       <div class="card"><h2 id="t_recent"></h2><p class="note" id="listCount"></p><div class="list" id="list"></div></div>
@@ -451,7 +456,7 @@ const T={
   allDef:"— Otro defecto (lista completa) —",choose:"— Elegir —",any:"— Sin especificar —",inMach:"Usados en esta máquina",otherPart:"Otro / no está en la lista…",otherWorker:"Otro (escribir)…",model:"Modelo",noModel:"Sin modelo",
   cancel:"Cancelar",save:"Guardar",saving:"Guardando…",
   data:"Datos",hist:"Incluir histórico de scrap (jun–oct)",pins:"Mostrar puntos en el mapa de calor",demo:"Vista de ejemplo",on:"Sí",off:"No",
-  all:"Todos",day:"Día",d7:"7 días",d30:"30 días",alltime:"Todo",
+  all:"Todos",day:"Día",d7:"7 días",d30:"30 días",alltime:"Todo",rng:"Rango",
   demoBanner:"Vista de ejemplo con datos ficticios. No se guarda nada.",
   empty:"No hay registros en este periodo.",emptyToday:"Todavía no hay registros hoy. Toca el mapa para agregar uno.",emptyBars:"Sin datos con estas clases y filtros.",del:"Eliminar",sure:"¿Eliminar?",saved:"✓ Defecto registrado",deleted:"Registro eliminado",
   pickType:"Elige el defecto (botón o lista) y luego toca Guardar.",
@@ -485,7 +490,7 @@ const T={
   allDef:"— 다른 불량 (전체 목록) —",choose:"— 선택 —",any:"— 지정 안 함 —",inMach:"이 설비 사용 품번",otherPart:"기타 / 목록에 없음…",otherWorker:"기타 (직접 입력)…",model:"차종",noModel:"차종 없음",
   cancel:"취소",save:"저장",saving:"저장 중…",
   data:"데이터",hist:"스크랩 이력 포함 (6~10월)",pins:"히트맵에 점 표시",demo:"예시 화면",on:"켜짐",off:"꺼짐",
-  all:"전체",day:"일자",d7:"7일",d30:"30일",alltime:"전체",
+  all:"전체",day:"일자",d7:"7일",d30:"30일",alltime:"전체",rng:"기간 지정",
   demoBanner:"가상 데이터로 만든 예시 화면입니다. 저장되지 않습니다.",
   empty:"이 기간에는 기록이 없습니다.",emptyToday:"오늘은 아직 기록이 없습니다. 지도를 터치해 추가하세요.",emptyBars:"선택한 분류·필터에 해당하는 데이터가 없습니다.",del:"삭제",sure:"삭제할까요?",saved:"✓ 불량이 등록되었습니다",deleted:"기록이 삭제되었습니다",
   pickType:"불량을 선택(버튼 또는 목록)한 뒤 저장을 누르세요.",
@@ -513,10 +518,10 @@ function dateStr(ts){const d=new Date(ts);return d.getFullYear()+"-"+pad(d.getMo
 function timeStr(ts){const d=new Date(ts);return pad(d.getHours())+":"+pad(d.getMinutes())}
 function dayStart(s){const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).getTime()}
 function addDays(s,n){const [y,m,d]=s.split("-").map(Number);return dateStr(new Date(y,m-1,d+n).getTime())}
-const S={attr:"origin",doproc:"",doAuto:true,tab:"reg",records:[],demo:false,pins:true,hist:true,weight:"reg",view:"alert",cls:{F:true,M:true,A:false,S:false},period:"7",day:dateStr(Date.now()),ftype:"all",fproc:"all",fmach:"all",fshift:"all",zoom:1,mem:false,draft:null,dtype:null,dshift:"DIA",pendingDel:null,photoBlob:null};
+const S={attr:"origin",doproc:"",doAuto:true,tab:"reg",records:[],demo:false,pins:true,hist:true,weight:"reg",view:"alert",cls:{F:true,M:true,A:false,S:false},period:"7",day:dateStr(Date.now()),from:dateStr(Date.now()).slice(0,8)+"01",to:dateStr(Date.now()),ftype:"all",fproc:"all",fmach:"all",fshift:"all",zoom:1,mem:false,draft:null,dtype:null,dshift:"DIA",pendingDel:null,photoBlob:null};
 const t=k=>T[lang][k];const L=o=>o[lang]||o.es;
 const pref=(k,v)=>{try{if(v===undefined)return localStorage.getItem("mapa-"+k)||"";localStorage.setItem("mapa-"+k,v)}catch(e){return ""}};
-{const p=pref("period3");if(["day","7","30","all"].includes(p))S.period=p;if(pref("hist")==="0")S.hist=false;if(pref("weight")==="pzs")S.weight="pzs";if(pref("view")==="heat")S.view="heat";
+{const p=pref("period3");if(["day","7","30","all","rng"].includes(p))S.period=p;{const rf=pref("rfrom"),rt=pref("rto");if(/^\d{4}-\d\d-\d\d$/.test(rf))S.from=rf;if(/^\d{4}-\d\d-\d\d$/.test(rt))S.to=rt}if(pref("hist")==="0")S.hist=false;if(pref("weight")==="pzs")S.weight="pzs";if(pref("view")==="heat")S.view="heat";
  const c=pref("cls");if(c&&/^[FMAS]+$/.test(c))CLS.forEach(k=>S.cls[k.id]=c.includes(k.id));if(pref("attr")==="det")S.attr="det";const tb=pref("tab");if(["reg","map","list","more"].includes(tb))S.tab=tb;const z=+pref("zoom");if(z>=1&&z<=3)S.zoom=z}
 
 /* ===== STORE: local cache + Google Sheets sync (Apps Script web app) ===== */
@@ -598,7 +603,7 @@ function seededDemo(){let s=11;const r=()=>{s=(s*16807)%2147483647;return s/2147
   return out}
 let DEMO=null;
 
-function range(){const now=Date.now();if(S.period==="all")return [0,Infinity];if(S.period==="day")return [dayStart(S.day),dayStart(addDays(S.day,1))];return [now-Number(S.period)*864e5,now+1]}
+function range(){const now=Date.now();if(S.period==="all")return [0,Infinity];if(S.period==="day")return [dayStart(S.day),dayStart(addDays(S.day,1))];if(S.period==="rng")return [dayStart(S.from),dayStart(addDays(S.to,1))];return [now-Number(S.period)*864e5,now+1]}
 function inPeriod(ts){const [a,b]=range();return ts>=a&&ts<b}
 function source(){if(S.demo)return DEMO||(DEMO=seededDemo());return S.hist?HIST.concat(S.records):S.records}
 const moved=r=>!!(r.oproc&&r.oproc!==r.proc);
@@ -662,7 +667,7 @@ function shiftName(id){const o=SHIFTS.find(x=>x.id===id)||LEGACY_SHIFT[id];retur
 function procName(id){const o=PROC[id]||LEGACY_PROC[id]||ORIGIN_EXTRA[id];return o?L(o):id}
 function partLabel(p,wm){const o=PART[p];if(!o)return p;return p+(o.n?" — "+o.n:"")+(wm&&o.m?" ("+o.m+")":"")}
 function dayLabel(s){return s+" ("+t("wd")[new Date(dayStart(s)).getDay()]+")"}
-function scopeWhen(){const now=Date.now();if(S.period==="day")return dayLabel(S.day);if(S.period==="all")return t("allTime");return dateStr(now-Number(S.period)*864e5)+" – "+dateStr(now)}
+function scopeWhen(){const now=Date.now();if(S.period==="day")return dayLabel(S.day);if(S.period==="rng")return S.from+" – "+S.to;if(S.period==="all")return t("allTime");return dateStr(now-Number(S.period)*864e5)+" – "+dateStr(now)}
 function clsText(){return CLS.filter(c=>S.cls[c.id]).map(L).join(" + ")}
 function filterText(){const f=[];if(S.fproc!=="all")f.push(procName(S.fproc));if(S.fmach!=="all")f.push(S.fmach);if(S.ftype!=="all")f.push(typeName(S.ftype));if(S.fshift!=="all")f.push(shiftName(S.fshift));return f.join(" · ")}
 function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
@@ -722,8 +727,9 @@ function renderFilters(){const recP=[...new Set(source().map(attrProc).filter(Bo
   fillGrouped($("fType"),[["all",t("all")]],defGroups(),S.ftype);S.ftype=$("fType").value;
   fillSelect($("fShift"),[["all",t("all")]].concat(SHIFTS.map(o=>[o.id,L(o)])),S.fshift);S.fshift=$("fShift").value;
   fillSelect($("fWeight"),[["reg",t("wReg")],["pzs",t("wPzs")]],S.weight)}
-function renderScope(){$$(".perseg").forEach(box=>{box.textContent="";[["day","day"],["7","d7"],["30","d30"],["all","alltime"]].forEach(([v,k])=>{const b=el("button",null,t(k));b.type="button";b.setAttribute("aria-pressed",String(S.period===v));b.addEventListener("click",()=>{S.period=v;pref("period3",v);render()});box.appendChild(b)})});
-  $$(".dayrow").forEach(r=>r.hidden=S.period!=="day");$$(".dayin").forEach(i=>i.value=S.day)}
+function renderScope(){$$(".perseg").forEach(box=>{box.textContent="";[["day","day"],["7","d7"],["30","d30"],["rng","rng"],["all","alltime"]].forEach(([v,k])=>{const b=el("button",null,t(k));b.type="button";b.setAttribute("aria-pressed",String(S.period===v));b.addEventListener("click",()=>{S.period=v;pref("period3",v);render()});box.appendChild(b)})});
+  $$(".dayrow").forEach(r=>r.hidden=S.period!=="day");$$(".dayin").forEach(i=>i.value=S.day);
+  $$(".rangerow").forEach(r=>r.hidden=S.period!=="rng");$$(".rfrom").forEach(i=>{i.value=S.from;i.max=S.to});$$(".rto").forEach(i=>{i.value=S.to;i.min=S.from})}
 function renderAttr(){const as=$("attrSeg");as.textContent="";[["origin","aOrigin"],["det","aDet"]].forEach(([v,k])=>{const b=el("button",null,t(k));b.type="button";b.setAttribute("aria-pressed",String(S.attr===v));
     b.addEventListener("click",()=>{S.attr=v;pref("attr",v);S.fmach="all";render()});as.appendChild(b)})}
 function renderOrigin(rows){const box=$("olist");box.textContent="";const by={};
@@ -877,6 +883,7 @@ async function onDelete(r){if(!canDel(r)){toast(t("needAdmin"));render();return}
 
 $("tabbar").addEventListener("click",e=>{const b=e.target.closest("button[data-tab]");if(!b)return;S.tab=b.dataset.tab;pref("tab",S.tab);render();window.scrollTo(0,0)});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-dshift]");if(!b)return;S.day=addDays(S.day,+b.dataset.dshift);render()});
+document.addEventListener("change",e=>{const c=e.target.classList;if((c.contains("rfrom")||c.contains("rto"))&&/^\d{4}-\d\d-\d\d$/.test(e.target.value)){if(c.contains("rfrom"))S.from=e.target.value;else S.to=e.target.value;if(S.from>S.to){const x=S.from;S.from=S.to;S.to=x}pref("rfrom",S.from);pref("rto",S.to);render();return}});
 document.addEventListener("change",e=>{if(e.target.classList.contains("dayin")&&/^\d{4}-\d\d-\d\d$/.test(e.target.value)){S.day=e.target.value;render()}});
 $("btnLang").addEventListener("click",()=>{lang=lang==="es"?"ko":"es";pref("lang",lang);applyLang();render()});
 $("btnHist").addEventListener("click",()=>{S.hist=!S.hist;pref("hist",S.hist?"1":"0");render()});
@@ -927,7 +934,7 @@ function xlsxBlob(rows,A){const dt=dayTable(rows),at=alertTable(A),mt=matTables(
     ["_rels/.rels",'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],["xl/workbook.xml",wb],
     ["xl/_rels/workbook.xml.rels",'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+sheets.map((s,i)=>'<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join("")+'<Relationship Id="rId'+(sheets.length+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'],["xl/styles.xml",styles]];
   sheets.forEach((s,i)=>files.push(["xl/worksheets/sheet"+(i+1)+".xml",sheetXml(s.data,s.widths)]));return zip(files)}
-function fileTag(){if(S.period==="day")return S.day.replace(/-/g,"");const d=new Date();const now=d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate());return S.period==="all"?"todo_"+now:S.period+"d_"+now}
+function fileTag(){if(S.period==="day")return S.day.replace(/-/g,"");if(S.period==="rng")return S.from.replace(/-/g,"")+"_"+S.to.replace(/-/g,"");const d=new Date();const now=d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate());return S.period==="all"?"todo_"+now:S.period+"d_"+now}
 async function doXlsx(){const rows=filtered();if(!rows.length){toast(t("none"));return}try{await Store.saveFile("mapa-defectos_"+fileTag()+".xlsx",xlsxBlob(rows,computeAlerts()))}catch(e){toast(t("fileErr"))}}
 $("btnXlsx").addEventListener("click",doXlsx);$("btnXlsx2").addEventListener("click",doXlsx);
 
