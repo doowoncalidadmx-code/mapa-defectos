@@ -459,7 +459,7 @@ const T={
   all:"Todos",day:"Día",d7:"7 días",d30:"30 días",alltime:"Todo",rng:"Rango",
   demoBanner:"Vista de ejemplo con datos ficticios. No se guarda nada.",
   empty:"No hay registros en este periodo.",emptyToday:"Todavía no hay registros hoy. Toca el mapa para agregar uno.",emptyBars:"Sin datos con estas clases y filtros.",del:"Eliminar",sure:"¿Eliminar?",saved:"✓ Defecto registrado",deleted:"Registro eliminado",
-  pickType:"Elige el defecto (botón o lista) y luego toca Guardar.",
+  pickType:"Elige el defecto (botón o lista) y luego toca Guardar.",dupWarn:"⚠ Hace {m} min se registró en la misma máquina la misma cantidad ({q} pzs): {t} · {p}. Si es la misma pieza (misma foto), toca Cancelar. Si es otro defecto, toca Guardar otra vez.",
   mem:"Este navegador no permite guardar datos: los registros se perderán al cerrar. Descarga el Excel antes de salir.",
   photoErr:"No se pudo guardar la foto; el defecto se guardó sin foto.",fileErr:"No se pudo generar el archivo.",none:"No hay registros para exportar.",
   impOk:"Registros importados: ",impErr:"No se pudo leer el archivo.",sheetName:"Defectos",sheetDay:"Por dia (piezas)",sheetAlert:"Alertas",
@@ -493,7 +493,7 @@ const T={
   all:"전체",day:"일자",d7:"7일",d30:"30일",alltime:"전체",rng:"기간 지정",
   demoBanner:"가상 데이터로 만든 예시 화면입니다. 저장되지 않습니다.",
   empty:"이 기간에는 기록이 없습니다.",emptyToday:"오늘은 아직 기록이 없습니다. 지도를 터치해 추가하세요.",emptyBars:"선택한 분류·필터에 해당하는 데이터가 없습니다.",del:"삭제",sure:"삭제할까요?",saved:"✓ 불량이 등록되었습니다",deleted:"기록이 삭제되었습니다",
-  pickType:"불량을 선택(버튼 또는 목록)한 뒤 저장을 누르세요.",
+  pickType:"불량을 선택(버튼 또는 목록)한 뒤 저장을 누르세요.",dupWarn:"⚠ {m}분 전 같은 설비에 같은 수량({q}개)이 등록됐습니다: {t} · {p}. 같은 불량(같은 사진)이면 취소하세요. 다른 불량이면 저장을 한 번 더 누르세요.",
   mem:"이 브라우저는 데이터 저장이 막혀 있어 창을 닫으면 기록이 사라집니다. 닫기 전에 엑셀로 내려받으세요.",
   photoErr:"사진을 저장하지 못해 사진 없이 저장했습니다.",fileErr:"파일을 만들지 못했습니다.",none:"내보낼 기록이 없습니다.",
   impOk:"가져온 기록: ",impErr:"파일을 읽지 못했습니다.",sheetName:"불량기록",sheetDay:"일자별 (수량)",sheetAlert:"알림",
@@ -857,7 +857,7 @@ $("lightbox").addEventListener("click",()=>{$("lightbox").hidden=true});
 $("partImg").addEventListener("click",()=>{if($("partImg").src){$("lbImg").src=$("partImg").src;$("lightbox").hidden=false}});
 
 function toast(msg,act,fn){const e=$("toast");e.textContent=msg;if(act){const b=el("button",null,act);b.type="button";b.addEventListener("click",()=>{e.hidden=true;fn()});e.appendChild(b)}e.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>e.hidden=true,act?8000:2600)}
-function openSheet(x,y){if(S.demo){toast(t("demoBanner"));return}
+function openSheet(x,y){if(S.demo){toast(t("demoBanner"));return}S.dupAck=null;
   S.draft={x,y};S.dzone=zoneAt(x,y);S.dtype=null;S.photoBlob=null;$("inCause").value="";$("inQty").value="1";$("inLot").value=pref("lot");$("inOper").value=pref("oper");$("inPartOther").value="";$("inWorkerOther").value="";$("sheetErr").hidden=true;S.dcomp=null;S.dcompPart="";S.dxtra=new Map();S.dloc="";S.dlocAuto=true;
   const sh=pref("shift");S.dshift=SHIFTS.some(s=>s.id===sh)?sh:"DIA";drawDraft();
   $("sheet").hidden=false;document.body.style.overflow="hidden";buildForm(false);renderComp(true);updPhotoUI();$("sheet").querySelector(".body").scrollTop=0}
@@ -874,6 +874,9 @@ $("btnSave").addEventListener("click",async()=>{if(!S.dtype){$("sheetErr").textC
   const rec={x:S.draft.x,y:S.draft.y,type:S.dtype,shift:S.dshift,proc:val("inProc"),mach:val("inMach").slice(0,60),part:curPart().slice(0,40),qty:q>0?Math.min(q,99999):1,lot:val("inLot").slice(0,40),worker:curWorker().slice(0,60),oper:val("inOper").slice(0,60),note:val("inCause").slice(0,120),ts:Date.now()};
   {const cs=compOf(rec.part);const xs=rec.part&&S.dxtra?[...S.dxtra].map(([c,q])=>[c,"",q]):[];
     if(cs&&S.dcomp&&S.dcompPart===rec.part){const l=cs.filter(c=>S.dcomp.has(c[0])).concat(xs);rec.comp=compStr(l)}else if(xs.length)rec.comp=compStr(xs)}
+  {const nk=x=>String(x||"").toUpperCase().replace(/[^A-Z0-9]/g,"");const al=CAT.calias||{};if(!PART[rec.part]){const hit=Object.keys(PART).find(k=>nk(k)===nk(rec.part));if(hit)rec.part=hit}if(al[rec.part])rec.part=al[rec.part]}
+  {const near=Store.list.filter(x=>x.mach&&x.mach===rec.mach&&(x.qty||1)===rec.qty&&Math.abs((+x.ts)-rec.ts)<=15*60000&&(x.type!==rec.type||x.part!==rec.part)).sort((a,b)=>b.ts-a.ts)[0];
+    if(near&&S.dupAck!==near.id){S.dupAck=near.id;b.textContent=t("save");b.disabled=false;$("sheetErr").textContent=t("dupWarn").replace("{m}",Math.max(1,Math.round((rec.ts-near.ts)/60000))).replace("{q}",rec.qty).replace("{t}",typeName(near.type)).replace("{p}",near.part||"-");$("sheetErr").hidden=false;$("sheetErr").scrollIntoView({block:"center"});return}}
   if(S.dloc&&isTube(rec.part,rec.proc))rec.loc=S.dloc;
   if(S.doproc&&S.doproc!==rec.proc){rec.oproc=S.doproc;rec.omach=PROC[S.doproc]?val("inOMach").slice(0,60):""}
   let pf=false;if(S.photoBlob){try{rec.photo=await Store.savePhoto(S.photoBlob)}catch(e){pf=true}}
